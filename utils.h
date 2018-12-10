@@ -21,7 +21,7 @@ int matIX(int n, int x, int y);
 void jacobi_iteration(int n, int m, const std::vector<int> &a,
   std::vector<float> &xOld, std::vector<float> &xNew, const std::vector<int> &b);
 
-int isError(double mttf, double time, std::default_random_engine generator);
+int isError(double mttf, double time, std::default_random_engine &generator);
 
 bool checkErrorVector(const std::vector<int> &e, int p, bool rendundancys);
 

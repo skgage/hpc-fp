@@ -41,7 +41,7 @@ void jacobi_iteration(int n, int m, const std::vector<int> &a,
   return;
 }
 
-int isError(double mttf, double time, std::mt19937 gen){
+int isError(double mttf, double time, std::mt19937 &gen){
   // Assuming f(t) = lambda * e^(-lambda * t)
   double lam = 1/mttf;
   double failProb = 1 - exp(-lam*time);
@@ -49,14 +49,14 @@ int isError(double mttf, double time, std::mt19937 gen){
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  printf("rank: %d fail prob: %f\n", rank, failProb);
+  //printf("rank: %d fail prob: %f\n", rank, failProb);
 
   //Gives true of false based on probability
   //std::default_random_engine generator;
   std::bernoulli_distribution distribution(failProb);
 
   if (distribution(gen)) {
-    printf("rank: %d error\n", rank);
+    //printf("rank: %d error\n", rank);
     //this means there was an error
     return 1;
   }
@@ -200,9 +200,9 @@ void fullCycle(int n, bool errorsOn, bool checkpointing, bool redundancy, int ch
     }
     // Update globalInterval counter
     globalIteration += 1;
-    if (rank == 0) {
-      //printf("totalIteration: %d, localIteration: %d\n", globalIteration, currentIteration);
-    }
+    // if (rank == 0) {
+    //   printf("totalIteration: %d, localIteration: %d\n", globalIteration, currentIteration);
+    // }
 
     MPIErrorStatus = MPI_Barrier(MPI_COMM_WORLD);
 
