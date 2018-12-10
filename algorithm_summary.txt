@@ -1,0 +1,51 @@
+In order to demonstrate the tradeoffs and effects of checkpointing and redundancy we implemented an abstracted demonstration using MPI. Our code is modeled off an iterative Jacobi solver for a system of equations where Ax = b. A is an n x n matrix and x and b are vectors of n length. Each processor has a matrix of m x n, where m is n/(number of processors). In each iteration a processor solves for m variables in x.
+
+We wanted to be able to demonstrate the nature of the error correcting problem on easily attainable system sizes and timescales and as such we abstracted many aspects of a real-world problem. As such this demonstration does not solve a system of equations, though it could easily by modified to do so. Error occurrence is simulated by a using a random number generator based on a Bernoulli distribution. This allows us to set a MTTF (Mean Time to Failure) for our nodes that is orders of magnitude higher than those real world components would experience. This means we can demonstrate the cross over point where redundancy becomes effective on a 24 processor system like the University of Colorado Summit nodes we used for our demonstration.
+
+Other elements that are abstracted are the time costs for writing and storing a checkpoint and the time to restart from a checkpoint if there is a job failure. In a real-world system these costs would vary with problem size but also with the layout and technology of a system.
+
+The order and layout of our demonstration code is roughly as follows:
+
+1)  Define values for:
+  n,
+  goal number of iterations,
+  checkpoint interval,
+  time to write checkpoint,
+  time to restart from checkpoint,
+  and MTTF for a node.
+
+2)  Initialize MPI
+
+3)  Decide whether a run will have errors, checkpointing, and redundancy turned on. A run without errors can give a baseline to show what percentage of time is used doing useful calculation on other systems
+
+4)  In a given run:
+
+  a)  Each processor randomly fills a matrix its portion of A, and full versions of vectors x and b. If redundancy is turned on then n is effectively half and each processor must calculate twice the number of x values.
+
+  b)  Define a random number generator. In our c++ implementation this is a random_device with a mt19937 generator.
+
+  c)  Create a vector of size m to hold error messages received from all processors.
+
+  d)  Use MPI_Wtime() to define a starting global_time for the run and a starting time (t1) for a particular iteration. The time of the processor of rank 0 is what is reported at the end of the program.
+
+  e)  Begin while loop to run until either the iteration (useful progress) reaches the goal or the global iterations (which include lost iterations due to errors) reaches the maximum
+
+  f)  Do an iteration of the matrix vector multiplication
+
+  g)  Record the time t2
+
+  h)  If errors are turned on, using the time passed from t1 to t2 and the MTTF error rate, randomly decide whether an error occurred.
+
+  i)  Using MPI_Allgather send error result to all other processors.
+
+  j)  Using the vector of error values decide whether an failure occurred. Without redundancy, any error causes a failure. With redundancy, both a processor and it's pair must have an error to be considered a failure.
+
+  k)  If an error occurred then the iteration count must be set back to the last checkpoint and the thread waits for the restart time.
+
+  l)  If no error occurred then the iteration count is incremented and, if it is a multiple of the checkpoint interval, waits for the checkpoint write time.
+
+  m)  Finally increment the global iteration count.
+
+  n)  End while loop.
+
+  o)  The rank 0 processor outputs its measurements of iteration counts and time expired. 
